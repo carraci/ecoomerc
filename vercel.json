@@ -1,20 +1,38 @@
 {
+    "version": 2,
     "buildCommand": "npm run build -- --configuration production",
     "outputDirectory": "dist/electshop/browser",
-    "framework": null,
+    "functions": {
+        "server/index.js": {
+            "memory": 512,
+            "maxDuration": 30
+        }
+    },
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/api/:path*",
+            "destination": "/server/index.js"
+        },
+        {
+            "source": "/((?!api).*)",
             "destination": "/index.html"
         }
     ],
     "headers": [
         {
-            "source": "/(.*)",
+            "source": "/api/(.*)",
             "headers": [
                 {
-                    "key": "Cache-Control",
-                    "value": "public, max-age=3600"
+                    "key": "Access-Control-Allow-Origin",
+                    "value": "*"
+                },
+                {
+                    "key": "Access-Control-Allow-Methods",
+                    "value": "GET,POST,PUT,DELETE,OPTIONS"
+                },
+                {
+                    "key": "Access-Control-Allow-Headers",
+                    "value": "Content-Type, Authorization"
                 }
             ]
         }

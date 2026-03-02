@@ -550,9 +550,14 @@ app.delete('/api/cart', authMiddleware, async (req, res) => {
     }
 });
 
-// ─── Start Server ──────────────────────────────────────────────────────────────
-app.listen(PORT, () => {
-    console.log(`\n🚀 Electshop API running on http://localhost:${PORT}`);
-    console.log(`📦 Collections: user | orders | cart  —  Database: ecommerce`);
-    console.log(`🔗 MongoDB Atlas: cluster0.46mletb.mongodb.net\n`);
-});
+// ─── Start Server (local dev) / Export for Vercel ──────────────────────────
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`\n🚀 Electshop API running on http://localhost:${PORT}`);
+        console.log(`📦 Collections: user | orders | cart  —  Database: ecommerce`);
+        console.log(`🔗 MongoDB Atlas: cluster0.46mletb.mongodb.net\n`);
+    });
+}
+
+// Export for Vercel serverless
+module.exports = app;
