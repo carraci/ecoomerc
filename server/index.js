@@ -10,7 +10,24 @@ const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'electshop_secret_key_2024';
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: 'http://localhost:4200', credentials: true }));
+const ALLOWED_ORIGINS = [
+    'http://localhost:4200',
+    'http://localhost:3000',
+    'https://ecoomerc.vercel.app',
+    'https://ecoomerc-api.vercel.app',
+    /\.vercel\.app$/          // allow all *.vercel.app preview URLs
+];
+app.use(cors({
+    origin: (origin, callback) => {
+        // allow requests with no origin (mobile apps, curl, Postman)
+        if (!origin) return callback(null, true);
+        const allowed = ALLOWED_ORIGINS.some(o =>
+            typeof o === 'string' ? o === origin : o.test(origin)
+        );
+        callback(allowed ? null : new Error('CORS blocked'), allowed);
+    },
+    credentials: true
+}));
 app.use(express.json());
 
 // ─── MongoDB Connection ────────────────────────────────────────────────────────

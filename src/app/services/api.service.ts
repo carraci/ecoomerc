@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface LoginPayload { email: string; password: string; }
 export interface RegisterPayload { firstName: string; lastName: string; email: string; password: string; }
@@ -30,7 +31,7 @@ export interface PlaceOrderPayload {
 @Injectable({ providedIn: 'root' })
 export class ApiService {
     private http = inject(HttpClient);
-    private base = 'http://localhost:3000/api';
+    private base = environment.apiUrl;
 
     // ── helpers ──────────────────────────────────────────────────────────────────
     private headers(token: string): HttpHeaders {

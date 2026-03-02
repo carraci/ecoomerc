@@ -6,6 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { Product } from '../../services/product.service';
 import { ProductCardComponent } from '../product-card/product-card';
+import { environment } from '../../../environments/environment';
 
 interface CategoryInfo { id: number; name: string; icon: string; color: string; count: number; slug: string; }
 interface Pagination { page: number; limit: number; total: number; pages: number; }
@@ -237,7 +238,7 @@ export class ShopComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private destroy$ = new Subject<void>();
   private searchSubject = new Subject<string>();
-  private readonly API = 'http://localhost:3000/api';
+  private readonly API = environment.apiUrl;
 
   products: Product[] = [];
   categoriesData: CategoryInfo[] = [];
