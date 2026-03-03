@@ -11,12 +11,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'electshop_secret_key_2024';
 
 // ─── Middleware ────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
-    'http://localhost:4200',
-    'http://localhost:3000',
-    'https://ecoomerc-lac.vercel.app',
-    'https://ecoomerc.vercel.app',
-    'https://ecoomerc-api.vercel.app',
-    /\.vercel\.app$/
+    /^http:\/\/localhost(:\d+)?$/,   // any localhost port (dev)
+    /\.vercel\.app$/,                 // all vercel preview & production domains
+    /^https:\/\/ecoomerc/            // any ecoomerc domain
 ];
 app.use(cors({
     origin: (origin, callback) => {

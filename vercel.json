@@ -1,7 +1,7 @@
 {
     "version": 2,
     "installCommand": "npm install && cd server && npm install",
-    "buildCommand": "npm run build -- --configuration production",
+    "buildCommand": "npx ng build --configuration production",
     "outputDirectory": "dist/electshop/browser",
     "functions": {
         "server/index.js": {
@@ -29,11 +29,15 @@
                 },
                 {
                     "key": "Access-Control-Allow-Methods",
-                    "value": "GET,POST,PUT,DELETE,OPTIONS"
+                    "value": "GET,POST,PUT,DELETE,OPTIONS,PATCH"
                 },
                 {
                     "key": "Access-Control-Allow-Headers",
                     "value": "Content-Type, Authorization"
+                },
+                {
+                    "key": "Access-Control-Allow-Credentials",
+                    "value": "true"
                 }
             ]
         }
