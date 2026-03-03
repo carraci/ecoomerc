@@ -1,5 +1,6 @@
 {
     "version": 2,
+    "installCommand": "npm install && cd server && npm install",
     "buildCommand": "npm run build -- --configuration production",
     "outputDirectory": "dist/electshop/browser",
     "functions": {
