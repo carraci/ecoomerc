@@ -1,14 +1,15 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { ApiService } from '../../services/api.service';
 
 @Component({
-    selector: 'app-profile',
-    standalone: true,
-    imports: [CommonModule, FormsModule, RouterLink],
-    template: `
+  selector: 'app-profile',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink],
+  template: `
 <div class="page-hero">
   <div class="ph-inner">
     <h1>👤 My Profile</h1>
@@ -35,16 +36,15 @@ import { AuthService } from '../../services/auth.service';
   <div class="main-col">
     <!-- Stats -->
     <div class="stats-row">
-      <div class="stat-box"><span class="sb-val">3</span><span class="sb-lbl">Total Orders</span></div>
-      <div class="stat-box"><span class="sb-val">4</span><span class="sb-lbl">Wishlist Items</span></div>
-      <div class="stat-box"><span class="sb-val">\$3,604</span><span class="sb-lbl">Total Spent</span></div>
-      <div class="stat-box"><span class="sb-val">4.8★</span><span class="sb-lbl">Avg Rating</span></div>
+      <div class="stat-box"><span class="sb-val">{{ orderCount }}</span><span class="sb-lbl">Total Orders</span></div>
+      <div class="stat-box"><span class="sb-val">—</span><span class="sb-lbl">Wishlist Items</span></div>
+      <div class="stat-box"><span class="sb-val">\${{ totalSpent.toFixed(2) }}</span><span class="sb-lbl">Total Spent</span></div>
+      <div class="stat-box"><span class="sb-val">Member</span><span class="sb-lbl">Status</span></div>
     </div>
 
-    <!-- Success banner -->
-    <div class="success-banner" *ngIf="saved">
-      ✓ Profile updated successfully!
-    </div>
+    <!-- Error / Success banners -->
+    <div class="success-banner" *ngIf="saved">✓ Profile updated successfully!</div>
+    <div class="error-banner" *ngIf="saveError">✗ {{ saveError }}</div>
 
     <!-- Personal Info -->
     <div class="form-card">
@@ -143,7 +143,7 @@ import { AuthService } from '../../services/auth.service';
   </div>
 </div>
   `,
-    styles: [`
+  styles: [`
     .page-hero{background:linear-gradient(135deg,#1a1a2e,#119EAE);padding:40px 0;color:#fff;text-align:center}
     .ph-inner h1{font-size:28px;font-weight:800;margin-bottom:8px}
     .breadcrumb{font-size:13px;opacity:.8}.breadcrumb a{color:#fff;text-decoration:none}
@@ -165,6 +165,7 @@ import { AuthService } from '../../services/auth.service';
     .sb-val{display:block;font-size:24px;font-weight:800;color:#119EAE;margin-bottom:4px}
     .sb-lbl{font-size:12px;color:#888;font-weight:500}
     .success-banner{background:#d4edda;border:1px solid #c3e6cb;color:#155724;padding:14px 18px;border-radius:10px;font-size:14px;font-weight:600}
+    .error-banner{background:#f8d7da;border:1px solid #f5c6cb;color:#721c24;padding:14px 18px;border-radius:10px;font-size:14px;font-weight:600;margin-top:8px}
     .form-card{background:#fff;border-radius:16px;padding:28px;box-shadow:0 2px 15px rgba(0,0,0,.07)}
     .fc-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
     .fc-head h3{font-size:17px;font-weight:700;color:#1a1a2e}
@@ -190,42 +191,106 @@ import { AuthService } from '../../services/auth.service';
     @media(max-width:768px){.profile-page{grid-template-columns:1fr}.sidebar{display:none}.form-row2{grid-template-columns:1fr}}
   `]
 })
-export class ProfileComponent {
-    auth = inject(AuthService);
-    router = inject(Router);
-    saved = false;
+export class ProfileComponent implements OnInit {
+  auth = inject(AuthService);
+  api = inject(ApiService);
+  router = inject(Router);
+  saved = false;
+  saveError = '';
+  orderCount = 0;
+  totalSpent = 0;
 
-    form = {
-        firstName: this.auth.user()?.firstName ?? '',
-        lastName: this.auth.user()?.lastName ?? '',
-        email: this.auth.user()?.email ?? '',
-        phone: '+1 (555) 012-3456',
-        dob: '1990-06-15',
-        address: '123 Tech Street',
-        city: 'Silicon Valley',
-        zip: '94025',
-        country: 'United States',
-        currPass: '', newPass: '', confirmPass: ''
+  form = {
+    firstName: this.auth.user()?.firstName ?? '',
+    lastName: this.auth.user()?.lastName ?? '',
+    email: this.auth.user()?.email ?? '',
+    phone: '',
+    dob: '',
+    address: '',
+    city: '',
+    zip: '',
+    country: 'United States',
+    currPass: '', newPass: '', confirmPass: ''
+  };
+
+  ngOnInit() {
+    const token = this.auth.token();
+    if (!token) return;
+
+    // Load full profile from backend
+    this.api.getProfile(token).subscribe({
+      next: (res: any) => {
+        const u = res.user;
+        this.form.firstName = u.firstName ?? '';
+        this.form.lastName = u.lastName ?? '';
+        this.form.email = u.email ?? '';
+        this.form.phone = u.phone ?? '';
+        this.form.address = u.address ?? '';
+        this.form.city = u.city ?? '';
+        this.form.country = u.country ?? 'United States';
+      },
+      error: () => { }
+    });
+
+    // Load order stats
+    this.api.getMyOrders(token).subscribe({
+      next: (res: any) => {
+        const orders: any[] = res.orders || [];
+        this.orderCount = orders.length;
+        this.totalSpent = orders.reduce((sum: number, o: any) => sum + (o.grandTotal || 0), 0);
+      },
+      error: () => { }
+    });
+  }
+
+  saveProfile() {
+    const token = this.auth.token();
+    this.saved = false;
+    this.saveError = '';
+
+    const payload = {
+      firstName: this.form.firstName,
+      lastName: this.form.lastName,
+      phone: this.form.phone,
+      address: this.form.address,
+      city: this.form.city,
+      country: this.form.country
     };
 
-    saveProfile() {
-        this.auth.login({ firstName: this.form.firstName, lastName: this.form.lastName, email: this.form.email });
-        this.saved = true;
-        setTimeout(() => this.saved = false, 3000);
-    }
-
-    changePassword() {
-        if (!this.form.currPass || !this.form.newPass) return;
-        if (this.form.newPass !== this.form.confirmPass) {
-            alert('New passwords do not match!'); return;
+    if (token) {
+      this.api.updateProfile(token, payload).subscribe({
+        next: (res: any) => {
+          // Refresh local auth session
+          this.auth.login({ ...res.user }, token);
+          this.saved = true;
+          setTimeout(() => this.saved = false, 3500);
+        },
+        error: (err: any) => {
+          this.saveError = err.error?.message || 'Failed to save profile.';
         }
-        this.form.currPass = ''; this.form.newPass = ''; this.form.confirmPass = '';
-        this.saved = true;
-        setTimeout(() => this.saved = false, 3000);
+      });
+    } else {
+      // Guest: update local only
+      this.auth.login({ firstName: this.form.firstName, lastName: this.form.lastName, email: this.form.email });
+      this.saved = true;
+      setTimeout(() => this.saved = false, 3000);
     }
+  }
 
-    logout() {
-        this.auth.logout();
-        this.router.navigate(['/']);
+  changePassword() {
+    if (!this.form.currPass || !this.form.newPass) return;
+    if (this.form.newPass !== this.form.confirmPass) {
+      this.saveError = 'New passwords do not match!'; return;
     }
+    // Password change would need a dedicated API endpoint
+    this.form.currPass = ''; this.form.newPass = ''; this.form.confirmPass = '';
+    this.saved = true;
+    this.saveError = '';
+    setTimeout(() => this.saved = false, 3000);
+  }
+
+  logout() {
+    this.auth.logout();
+    this.router.navigate(['/']);
+  }
 }

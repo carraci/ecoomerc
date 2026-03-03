@@ -81,6 +81,12 @@ export class ApiService {
         return this.http.delete(`${this.base}/cart`, { headers: this.headers(token) });
     }
 
+    // ── Products (convenience) ────────────────────────────────────────────────────
+    getProducts(params?: Record<string, string>): Observable<any> {
+        const qp = params ? '?' + new URLSearchParams(params).toString() : '';
+        return this.http.get(`${this.base}/products${qp}`);
+    }
+
     // ── Health ───────────────────────────────────────────────────────────────────
     health(): Observable<any> {
         return this.http.get(`${this.base}/health`);
